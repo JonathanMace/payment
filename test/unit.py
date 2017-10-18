@@ -10,8 +10,8 @@ class GoServices(unittest.TestCase):
         command = ['docker', 'run',
             '--rm',
             '-v', goPath + ':/go/',
-            '-v', code_dir + ':/go/src/github.com/microservices-demo/payment',
-            '-w', '/go/src/github.com/microservices-demo/payment',
+            '-v', code_dir + ':/go/src/github.com/JonathanMace/payment',
+            '-w', '/go/src/github.com/JonathanMace/payment',
             '-e', 'GOPATH=/go/',
             'golang:1.7',
             'go', 'test', '-v', '-covermode=count', '-coverprofile=coverage.out'

@@ -730,6 +730,20 @@
 			"revision": "bfee1239d796830ca346767650cce5ba90d58c57",
 			"branch": "master",
 			"notests": true
-		}
+		},
+        {
+            "importpath": "github.com/tracingplane/tracingplane-go",
+            "repository": "https://github.com/tracingplane/tracingplane-go",
+            "vcs": "git",
+            "branch": "master",
+            "notests": true
+        },
+        {
+            "importpath": "github.com/JonathanMace/tracing-framework-go",
+            "repository": "https://github.com/JonathanMace/tracing-framework-go",
+            "vcs": "git",
+            "branch": "master",
+            "notests": true
+        }
 	]
 }

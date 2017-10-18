@@ -16,7 +16,16 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
         "github.com/streadway/handy/breaker"
 	"golang.org/x/net/context"
+	kithttp "github.com/go-kit/kit/transport/http"
+	baggage "github.com/JonathanMace/tracing-framework-go/xtrace/gokitutil"
 )
+
+// stupid old gokit only allows one serverbefore function
+func serverBefore(f kithttp.RequestFunc) httptransport.ServerOption {
+	return httptransport.ServerBefore(func(context context.Context, request *http.Request) context.Context {
+		return f(baggage.XTraceServerPreHandleInterceptor(context, request), request)
+	})
+}
 
 // MakeHTTPHandler mounts the endpoints into a REST-y HTTP handler.
 func MakeHTTPHandler(ctx context.Context, e Endpoints, logger log.Logger, tracer stdopentracing.Tracer) *mux.Router {
@@ -24,6 +33,12 @@ func MakeHTTPHandler(ctx context.Context, e Endpoints, logger log.Logger, tracer
 	options := []httptransport.ServerOption{
 		httptransport.ServerErrorLogger(logger),
 		httptransport.ServerErrorEncoder(encodeError),
+		//httptransport.ServerBefore(func(context context.Context, request *http.Request) context.Context {
+		//	return baggage.XTraceServerPreHandleInterceptor(context, request)
+		//}),
+		httptransport.ServerAfter(func(context context.Context, writer http.ResponseWriter) context.Context {
+			return baggage.XTraceServerPostHandleInterceptor(context, writer)
+		}),
 	}
 
 	r.Methods("POST").Path("/paymentAuth").Handler(httptransport.NewServer(
@@ -31,14 +46,14 @@ func MakeHTTPHandler(ctx context.Context, e Endpoints, logger log.Logger, tracer
 		circuitbreaker.HandyBreaker(breaker.NewBreaker(0.2))(e.AuthoriseEndpoint),
 		decodeAuthoriseRequest,
 		encodeAuthoriseResponse,
-		append(options, httptransport.ServerBefore(opentracing.FromHTTPRequest(tracer, "POST /paymentAuth", logger)))...,
+		append(options, serverBefore(opentracing.FromHTTPRequest(tracer, "POST /paymentAuth", logger)))...,
 	))
 	r.Methods("GET").Path("/health").Handler(httptransport.NewServer(
 		ctx,
 		circuitbreaker.HandyBreaker(breaker.NewBreaker(0.2))(e.HealthEndpoint),
 		decodeHealthRequest,
 		encodeHealthResponse,
-		append(options, httptransport.ServerBefore(opentracing.FromHTTPRequest(tracer, "GET /health", logger)))...,
+		append(options, serverBefore(opentracing.FromHTTPRequest(tracer, "GET /health", logger)))...,
 	))
 	r.Handle("/metrics", promhttp.Handler())
 	return r

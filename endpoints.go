@@ -5,6 +5,7 @@ import (
 	"github.com/go-kit/kit/tracing/opentracing"
 	stdopentracing "github.com/opentracing/opentracing-go"
 	"golang.org/x/net/context"
+	xtr "github.com/JonathanMace/tracing-framework-go/xtrace/client"
 )
 
 // Endpoints collects the endpoints that comprise the Service.
@@ -25,6 +26,8 @@ func MakeEndpoints(s Service, tracer stdopentracing.Tracer) Endpoints {
 // MakeListEndpoint returns an endpoint via the given service.
 func MakeAuthoriseEndpoint(s Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		xtr.Log("Authorise")
+		defer xtr.Log("Authorise Done")
 		var span stdopentracing.Span
 		span, ctx = stdopentracing.StartSpanFromContext(ctx, "authorize payment")
 		span.SetTag("service", "payment")
@@ -38,6 +41,8 @@ func MakeAuthoriseEndpoint(s Service) endpoint.Endpoint {
 // MakeHealthEndpoint returns current health of the given service.
 func MakeHealthEndpoint(s Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		xtr.Log("Health")
+		defer xtr.Log("Health Done")
 		var span stdopentracing.Span
 		span, ctx = stdopentracing.StartSpanFromContext(ctx, "health check")
 		span.SetTag("service", "payment")

@@ -9,15 +9,23 @@ import (
 	"syscall"
 
 	"github.com/go-kit/kit/log"
-	"github.com/microservices-demo/payment"
+	"github.com/JonathanMace/payment"
 	stdopentracing "github.com/opentracing/opentracing-go"
 	zipkin "github.com/openzipkin/zipkin-go-opentracing"
 	"golang.org/x/net/context"
+	xtr "github.com/JonathanMace/tracing-framework-go/xtrace/client"
+	bot "github.com/JonathanMace/tracing-framework-go/opentracing"
 )
 
 const (
 	ServiceName = "payment"
 )
+
+func init() {
+	fmt.Println("Connecting to xtrace-server:5563")
+	xtr.Connect("xtrace-server:5563")
+	xtr.SetProcessName("Payment Microservice")
+}
 
 func main() {
 	var (
@@ -31,7 +39,7 @@ func main() {
 		// Log domain.
 		var logger log.Logger
 		{
-			logger = log.NewLogfmtLogger(os.Stderr)
+			logger = log.NewLogfmtLogger(xtr.MakeWriter(os.Stderr))
 			logger = log.NewContext(logger).With("ts", log.DefaultTimestampUTC)
 			logger = log.NewContext(logger).With("caller", log.DefaultCaller)
 		}
@@ -51,6 +59,7 @@ func main() {
 			tracer, err = zipkin.NewTracer(
 				zipkin.NewRecorder(collector, false, fmt.Sprintf("localhost:%v", port), ServiceName),
 			)
+			tracer = bot.Wrap(tracer.(zipkin.Tracer))
 			if err != nil {
 				logger.Log("err", err)
 				os.Exit(1)
